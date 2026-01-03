@@ -6,7 +6,8 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { Memory } from "./memory";
 import { UserStateDO } from "./durable-objects";
-import { Goal, StudySession, DailyPlan, PlannedTask, Topic, calculateMemoryDecayLevel } from "./types";
+import { Goal, StudySession, DailyPlan, PlannedTask, Topic, calculateMemoryDecayLevel, UserState } from "./types";
+import { generateDailyPlan } from "./agent";
 
 interface Env {
   AI: any;
@@ -100,7 +101,7 @@ async function handleCommand(
           isCommand: true,
         };
       } else {
-        // Generate new plan - call the plan generation logic directly
+        // Generate new plan using AI agent module
         const stateResponse = await userStateStub.fetch("https://internal/state", {
           method: "GET",
         });
@@ -112,139 +113,41 @@ async function handleCommand(
           };
         }
 
-        const userState = await stateResponse.json<{
-          goals: Goal[];
-          sessions: any[];
-        }>();
+        const userState = await stateResponse.json<UserState>();
 
-        const reviewResponse = await userStateStub.fetch(
-          "https://internal/topics/needing-review",
-          { method: "GET" }
-        );
-        const topicsNeedingReview = await reviewResponse.json<Topic[]>();
-
-        const activeGoals = userState.goals.filter((g) => g.status === "active");
-        
-        if (activeGoals.length === 0) {
-          return {
-            reply: "❌ No active goals found. Create a goal first!",
-            isCommand: true,
-          };
-        }
-
-        // Build prompt for AI
-        const prompt = `You are an AI study planner. Generate a daily study plan for ${date}.
-
-Active Goals:
-${activeGoals
-  .map(
-    (g) =>
-      `- ${g.title} (${g.type}, priority ${g.priority}, deadline: ${g.deadline})`
-  )
-  .join("\n")}
-
-Topics Needing Review:
-${topicsNeedingReview
-  .map((t) => `- ${t.name} (ID: ${t.id}, goal: ${t.goalId})`)
-  .join("\n")}
-
-Generate a focused daily plan with 3-5 tasks. For each task, provide:
-- topicId: the topic ID from above
-- goalId: the goal ID from above
-- type: 'study', 'review', or 'project_work'
-- estimatedMinutes: estimated time in minutes (30-120)
-- priority: 1-5
-- reasoning: why this task is important
-
-Return ONLY a valid JSON object with:
-{
-  "reasoning": "Your overall explanation for this plan",
-  "tasks": [array of task objects]
-}
-
-Do not include any markdown, code blocks, or extra text. Only JSON.`;
-
-        // Call AI using existing binding
-        const aiResponse = await env.AI.run("@cf/meta/llama-3-8b-instruct", {
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a helpful study planner AI. Always respond with valid JSON only, no markdown, no code blocks, just pure JSON.",
-            },
-            { role: "user", content: prompt },
-          ],
-        });
-
-        let aiResult: { reasoning: string; tasks: PlannedTask[] };
         try {
-          const aiText = aiResponse?.response || aiResponse?.result || "{}";
-          // Extract JSON from response
-          const jsonMatch =
-            aiText.match(/```json\s*([\s\S]*?)\s*```/) ||
-            aiText.match(/```\s*([\s\S]*?)\s*```/) ||
-            [null, aiText];
-          const jsonText = jsonMatch[1] || jsonMatch[0] || aiText;
-          aiResult = JSON.parse(jsonText);
-        } catch (parseError) {
-          console.error("AI response parse error:", parseError);
-          // Fallback plan
-          aiResult = {
-            reasoning:
-              "Generated a basic study plan based on topics needing review.",
-            tasks: topicsNeedingReview.slice(0, 3).map((topic) => ({
-              topicId: topic.id,
-              goalId: topic.goalId,
-              type: "review" as const,
-              estimatedMinutes: 30,
-              priority: 3,
-              reasoning: `Review ${topic.name} to maintain retention`,
-            })),
-          };
-        }
+          // Use the AI agent to generate the plan
+          const plan = await generateDailyPlan(userState, date, env.AI);
 
-        // Validate tasks
-        const validTasks: PlannedTask[] = [];
-        for (const task of aiResult.tasks || []) {
-          const goal = activeGoals.find((g) => g.id === task.goalId);
-          if (goal) {
-            const topic = goal.topics.find((t) => t.id === task.topicId);
-            if (topic) {
-              validTasks.push(task);
-            }
+          // Store the plan
+          const planResponse = await userStateStub.fetch("https://internal/daily-plans", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(plan),
+          });
+
+          if (planResponse.status !== 201) {
+            throw new Error("Failed to store plan");
           }
-        }
 
-        if (validTasks.length === 0) {
+          const tasksSummary = plan.tasks
+            .map(
+              (t, i) =>
+                `${i + 1}. ${t.type === "review" ? "🔄 Review" : t.type === "study" ? "📚 Study" : "💼 Project"}: ${t.estimatedMinutes} min (Priority: ${"★".repeat(t.priority)}${"☆".repeat(5 - t.priority)})`
+            )
+            .join("\n");
+
           return {
-            reply: "❌ Could not generate valid tasks. Please check your goals and topics.",
+            reply: `📅 **Generated Today's Study Plan** (${date})\n\n${plan.reasoning}\n\n**Tasks:**\n${tasksSummary}`,
+            isCommand: true,
+          };
+        } catch (error: any) {
+          console.error("Plan generation error:", error);
+          return {
+            reply: `❌ Error generating plan: ${error.message || "Unknown error"}`,
             isCommand: true,
           };
         }
-
-        // Store the plan
-        const planResponse = await userStateStub.fetch("https://internal/daily-plans", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            date,
-            reasoning: aiResult.reasoning || "AI-generated daily study plan",
-            tasks: validTasks,
-          }),
-        });
-
-        const plan = await planResponse.json<DailyPlan>();
-        const tasksSummary = plan.tasks
-          .map(
-            (t, i) =>
-              `${i + 1}. ${t.type === "review" ? "🔄 Review" : t.type === "study" ? "📚 Study" : "💼 Project"}: ${t.estimatedMinutes} min (Priority: ${"★".repeat(t.priority)}${"☆".repeat(5 - t.priority)})`
-          )
-          .join("\n");
-
-        return {
-          reply: `📅 **Generated Today's Study Plan** (${date})\n\n${plan.reasoning}\n\n**Tasks:**\n${tasksSummary}`,
-          isCommand: true,
-        };
       }
     } catch (err) {
       console.error("Plan generation error:", err);
@@ -660,120 +563,30 @@ app.post("/api/plan/generate", async (c) => {
     const stateResponse = await stub.fetch("https://internal/state", {
       method: "GET",
     });
-    const userState = await stateResponse.json<{
-      goals: Goal[];
-      sessions: any[];
-    }>();
 
-    // Get topics needing review
-    const reviewResponse = await stub.fetch(
-      "https://internal/topics/needing-review",
-      { method: "GET" }
-    );
-    const topicsNeedingReview = await reviewResponse.json();
-
-    // Build prompt for AI
-    const activeGoals = userState.goals.filter((g) => g.status === "active");
-    const prompt = `You are an AI study planner. Generate a daily study plan for ${date}.
-
-Active Goals:
-${activeGoals
-  .map(
-    (g) =>
-      `- ${g.title} (${g.type}, priority ${g.priority}, deadline: ${g.deadline})`
-  )
-  .join("\n")}
-
-Topics Needing Review:
-${topicsNeedingReview
-  .map((t: any) => `- ${t.name} (from goal: ${t.goalId})`)
-  .join("\n")}
-
-Generate a focused daily plan with 3-5 tasks. For each task, provide:
-- topicId: the topic ID
-- goalId: the goal ID
-- type: 'study', 'review', or 'project_work'
-- estimatedMinutes: estimated time in minutes
-- priority: 1-5
-- reasoning: why this task is important
-
-Return a JSON object with:
-- reasoning: Your overall explanation for this plan
-- tasks: Array of task objects
-
-Format your response as valid JSON only.`;
-
-    // Call AI using existing Workers AI binding
-    const aiResponse = await c.env.AI.run("@cf/meta/llama-3-8b-instruct", {
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a helpful study planner AI. Always respond with valid JSON only, no markdown, no code blocks, just pure JSON.",
-        },
-        { role: "user", content: prompt },
-      ],
-    });
-
-    let aiResult: { reasoning: string; tasks: PlannedTask[] };
-    try {
-      // Try to parse AI response as JSON
-      const aiText =
-        aiResponse?.response || aiResponse?.result || "{}";
-      // Extract JSON from response (handle markdown code blocks)
-      const jsonMatch = aiText.match(/```json\s*([\s\S]*?)\s*```/) || 
-                        aiText.match(/```\s*([\s\S]*?)\s*```/) ||
-                        [null, aiText];
-      aiResult = JSON.parse(jsonMatch[1] || jsonMatch[0] || "{}");
-    } catch (parseError) {
-      console.error("AI response parse error:", parseError);
-      // Fallback: create a simple plan
-      aiResult = {
-        reasoning:
-          "Generated a basic study plan. AI response parsing failed, using default plan.",
-        tasks: topicsNeedingReview.slice(0, 3).map((topic: any) => ({
-          topicId: topic.id,
-          goalId: topic.goalId,
-          type: "review" as const,
-          estimatedMinutes: 30,
-          priority: 3,
-          reasoning: `Review ${topic.name} to maintain retention`,
-        })),
-      };
+    if (stateResponse.status === 404) {
+      return c.json({ error: "User state not found. Create a goal first." }, 404);
     }
 
-    // Validate tasks reference valid goals and topics
-    const validTasks: PlannedTask[] = [];
-    for (const task of aiResult.tasks || []) {
-      const goal = activeGoals.find((g) => g.id === task.goalId);
-      if (goal) {
-        const topic = goal.topics.find((t) => t.id === task.topicId);
-        if (topic) {
-          validTasks.push(task);
-        }
-      }
-    }
+    const userState = await stateResponse.json<UserState>();
 
-    if (validTasks.length === 0) {
-      return c.json(
-        { error: "No valid tasks could be generated from current goals" },
-        400
-      );
-    }
+    // Use AI agent to generate plan
+    const plan = await generateDailyPlan(userState, date, c.env.AI);
 
     // Store the plan
     const planResponse = await stub.fetch("https://internal/daily-plans", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        date,
-        reasoning: aiResult.reasoning || "AI-generated daily study plan",
-        tasks: validTasks,
-      }),
+      body: JSON.stringify(plan),
     });
 
-    const plan = await planResponse.json<DailyPlan>();
-    return c.json(plan, 201);
+    if (planResponse.status !== 201) {
+      const error = await planResponse.json();
+      return c.json(error, planResponse.status);
+    }
+
+    const storedPlan = await planResponse.json<DailyPlan>();
+    return c.json(storedPlan, 201);
   } catch (err) {
     console.error("Generate plan error:", err);
     return c.json({ error: "Internal server error" }, 500);
