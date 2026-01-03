@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { DailyPlan, PlannedTask } from '../types';
+import { DailyPlan } from '../types';
 import { plansApi } from '../api/client';
 
 export default function CalendarPage() {

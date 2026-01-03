@@ -6,7 +6,6 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import GoalCard from '../components/GoalCard';
 import { goalsApi } from '../api/client';
-import { Goal } from '../types';
 
 export default function GoalsPage() {
   const { goals, loading, refreshAll } = useApp();
@@ -20,8 +19,6 @@ export default function GoalsPage() {
   });
 
   const activeGoals = goals.filter((g) => g.status === 'active');
-  const completedGoals = goals.filter((g) => g.status === 'completed');
-  const archivedGoals = goals.filter((g) => g.status === 'archived');
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
