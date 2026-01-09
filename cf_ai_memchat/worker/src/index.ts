@@ -356,6 +356,9 @@ app.post("/api/goals", async (c) => {
       status: "active" as const,
     };
 
+    console.log("Worker: Creating goal for user:", userId);
+    console.log("Worker: Goal data:", JSON.stringify(goalData));
+
     const stub = getUserStateDO(c.env, userId);
     const response = await stub.fetch("https://internal/goals", {
       method: "POST",
@@ -363,15 +366,20 @@ app.post("/api/goals", async (c) => {
       body: JSON.stringify(goalData),
     });
 
+    console.log("Worker: Durable Object response status:", response.status);
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: "Failed to create goal" }));
+      console.error("Worker: Durable Object error:", errorData);
       return c.json({ error: errorData.error || "Failed to create goal" }, response.status);
     }
 
     const goal = await response.json<Goal>();
+    console.log("Worker: Successfully created goal:", goal.id);
     return c.json(goal, response.status);
   } catch (err: any) {
-    console.error("Create goal error:", err);
+    console.error("Worker: Create goal error:", err);
+    console.error("Error stack:", err.stack);
     return c.json({ error: err.message || "Internal server error" }, 500);
   }
 });

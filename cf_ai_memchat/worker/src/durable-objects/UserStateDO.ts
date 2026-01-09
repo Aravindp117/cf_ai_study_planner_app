@@ -79,32 +79,47 @@ export class UserStateDO {
    * Accepts topics without id and goalId - these will be generated
    */
   async addGoal(goalData: Omit<Goal, "id" | "createdAt"> & { topics: Omit<Topic, "id" | "goalId">[] }): Promise<Goal> {
-    const state = await this.getState();
+    try {
+      const state = await this.getState();
 
-    const goalId = this.generateId();
-    
-    // Create Topic objects with IDs and goalId
-    const topics: Topic[] = (goalData.topics || []).map((topicData) => ({
-      ...topicData,
-      id: this.generateId(),
-      goalId,
-    }));
+      const goalId = this.generateId();
+      
+      // Create Topic objects with IDs and goalId - ensure all required fields are present
+      const topics: Topic[] = (goalData.topics || []).map((topicData) => ({
+        id: this.generateId(),
+        goalId: goalId,
+        name: topicData.name || "",
+        lastReviewed: topicData.lastReviewed ?? null,
+        reviewCount: topicData.reviewCount ?? 0,
+        masteryLevel: topicData.masteryLevel ?? 0,
+        notes: topicData.notes || "",
+      }));
 
-    const newGoal: Goal = {
-      title: goalData.title,
-      type: goalData.type,
-      deadline: goalData.deadline,
-      priority: goalData.priority,
-      status: goalData.status,
-      id: goalId,
-      createdAt: new Date().toISOString(),
-      topics,
-    };
+      // Validate required fields
+      if (!goalData.title || !goalData.type || !goalData.deadline || goalData.priority === undefined) {
+        throw new Error("Missing required fields: title, type, deadline, or priority");
+      }
 
-    state.goals.push(newGoal);
-    await this.setState(state);
+      const newGoal: Goal = {
+        id: goalId,
+        title: goalData.title,
+        type: goalData.type,
+        deadline: goalData.deadline,
+        priority: goalData.priority,
+        status: goalData.status || "active",
+        createdAt: new Date().toISOString(),
+        topics,
+      };
 
-    return newGoal;
+      state.goals.push(newGoal);
+      await this.setState(state);
+
+      console.log("Successfully created goal:", newGoal.id);
+      return newGoal;
+    } catch (error: any) {
+      console.error("Error in addGoal:", error);
+      throw error;
+    }
   }
 
   /**

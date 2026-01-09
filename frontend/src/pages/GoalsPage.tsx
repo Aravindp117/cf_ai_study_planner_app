@@ -29,9 +29,25 @@ export default function GoalsPage() {
         .filter((t) => t.length > 0);
 
       // Convert date to ISO string
-      const deadlineISO = formData.deadline
-        ? new Date(formData.deadline + 'T00:00:00Z').toISOString()
-        : '';
+      // HTML date input returns YYYY-MM-DD format
+      let deadlineISO = '';
+      if (formData.deadline) {
+        try {
+          // Handle YYYY-MM-DD format from HTML date input
+          const dateStr = formData.deadline.includes('T') 
+            ? formData.deadline.split('T')[0] 
+            : formData.deadline;
+          const date = new Date(dateStr + 'T00:00:00.000Z');
+          if (isNaN(date.getTime())) {
+            throw new Error('Invalid date');
+          }
+          deadlineISO = date.toISOString();
+        } catch (error) {
+          console.error('Date conversion error:', error);
+          alert('Invalid date format. Please select a valid deadline.');
+          return;
+        }
+      }
 
       if (!deadlineISO) {
         alert('Please select a deadline');
