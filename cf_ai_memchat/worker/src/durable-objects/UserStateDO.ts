@@ -414,9 +414,10 @@ export class UserStateDO {
       }
 
       // DELETE /goals/:id - Delete a goal
-      if (path.startsWith("/goals/") && method === "DELETE") {
-        const goalId = path.split("/goals/")[1]?.split("/")[0]; // Extract goalId, ignoring any trailing paths
-        if (!goalId) {
+      // Must check DELETE before POST /goals/:id/topics to avoid path conflicts
+      if (path.startsWith("/goals/") && method === "DELETE" && !path.includes("/topics")) {
+        const goalId = path.replace("/goals/", "").split("/")[0]; // Extract goalId, ignoring any trailing paths
+        if (!goalId || goalId.trim() === "") {
           return new Response(
             JSON.stringify({ error: "Goal ID required" }),
             {
@@ -426,16 +427,18 @@ export class UserStateDO {
           );
         }
         try {
+          console.log("Durable Object: Attempting to delete goal:", goalId);
           await this.deleteGoal(goalId);
           return new Response(JSON.stringify({ success: true }), {
             status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         } catch (error: any) {
+          console.error("Durable Object: Error deleting goal:", error);
           return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: error.message || "Failed to delete goal" }),
             {
-              status: error.message.includes("not found") ? 404 : 400,
+              status: error.message && error.message.includes("not found") ? 404 : 400,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             }
           );

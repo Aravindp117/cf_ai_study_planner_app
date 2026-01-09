@@ -437,19 +437,31 @@ app.delete("/api/goals/:id", async (c) => {
     const userId = c.get("userId");
     const goalId = c.req.param("id");
 
+    if (!goalId) {
+      return c.json({ error: "Goal ID is required" }, 400);
+    }
+
+    console.log("Deleting goal:", goalId, "for user:", userId);
+
     const stub = getUserStateDO(c.env, userId);
     const response = await stub.fetch(`https://internal/goals/${goalId}`, {
       method: "DELETE",
     });
 
+    const responseData = await response.json().catch(() => ({ error: "Failed to parse response" }));
+
     if (response.status === 404) {
-      return c.json({ error: "Goal not found" }, 404);
+      return c.json({ error: responseData.error || "Goal not found" }, 404);
+    }
+
+    if (!response.ok) {
+      return c.json({ error: responseData.error || "Failed to delete goal" }, response.status);
     }
 
     return c.json({ success: true }, 200);
-  } catch (err) {
+  } catch (err: any) {
     console.error("Delete goal error:", err);
-    return c.json({ error: "Internal server error" }, 500);
+    return c.json({ error: err.message || "Internal server error" }, 500);
   }
 });
 
