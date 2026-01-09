@@ -105,6 +105,7 @@ export const sessionsApi = {
     goalId: string;
     durationMinutes: number;
     notes?: string;
+    date?: string; // Optional date in YYYY-MM-DD format, defaults to today
   }): Promise<StudySession> {
     const response = await fetch(`${API_URL}/api/sessions`, {
       method: 'POST',

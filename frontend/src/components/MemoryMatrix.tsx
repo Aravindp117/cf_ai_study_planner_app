@@ -121,8 +121,7 @@ export default function MemoryMatrix() {
             return (
               <div
                 key={topic.id}
-                onClick={() => handleTopicClick(topic, goal)}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-lg ${getDecayColorClass(
+                className={`p-4 rounded-lg border-2 transition-all hover:shadow-lg ${getDecayColorClass(
                   decayLevel
                 )} ${isDue ? 'ring-2 ring-red-500' : ''}`}
               >
@@ -131,7 +130,7 @@ export default function MemoryMatrix() {
                   <TopicDecayIndicator level={decayLevel} size="sm" />
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{goal.title}</p>
-                <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+                <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400 mb-3">
                   <div className="flex justify-between">
                     <span>Mastery:</span>
                     <span className="font-medium">{topic.masteryLevel}%</span>
@@ -166,10 +165,16 @@ export default function MemoryMatrix() {
                   )}
                 </div>
                 {isDue && (
-                  <div className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">
+                  <div className="mt-2 mb-3 text-xs font-semibold text-red-600 dark:text-red-400">
                     ⚠️ Due for review
                   </div>
                 )}
+                <button
+                  onClick={() => handleTopicClick(topic, goal)}
+                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm"
+                >
+                  Log Session
+                </button>
               </div>
             );
           })}
@@ -185,12 +190,11 @@ export default function MemoryMatrix() {
             return (
               <div
                 key={topic.id}
-                onClick={() => handleTopicClick(topic, goal)}
-                className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${getDecayColorClass(
+                className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${getDecayColorClass(
                   decayLevel
                 )} ${isDue ? 'ring-2 ring-red-500' : ''}`}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-gray-900 dark:text-white">{topic.name}</h3>
@@ -228,6 +232,12 @@ export default function MemoryMatrix() {
                     </div>
                   )}
                 </div>
+                <button
+                  onClick={() => handleTopicClick(topic, goal)}
+                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm"
+                >
+                  Log Session
+                </button>
               </div>
             );
           })}

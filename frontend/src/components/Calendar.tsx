@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { format, startOfWeek, addDays, eachDayOfInterval, parseISO } from 'date-fns';
+import { format, startOfWeek, addDays, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
 import { useApp } from '../context/AppContext';
 import { DailyPlan } from '../types';
 import { plansApi } from '../api/client';
@@ -70,21 +70,42 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
   dailyPlans.forEach((plan) => allPlans.set(plan.date, plan));
   loadedPlans.forEach((plan, date) => allPlans.set(date, plan));
 
-  const getVisibleDates = (): string[] => {
+  const getVisibleDates = (): Array<{ date: string; inMonth: boolean }> => {
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    
     if (viewMode === 'week') {
-      const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
-      return eachDayOfInterval({
+      // For week view, find the week that contains the first day of the current month
+      // Start from Sunday of that week
+      const weekStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+      const dates = eachDayOfInterval({
         start: weekStart,
         end: addDays(weekStart, 6),
-      }).map((date) => format(date, 'yyyy-MM-dd'));
+      });
+      
+      // Return all 7 days, but mark which are in the current month
+      return dates.map((date) => ({
+        date: format(date, 'yyyy-MM-dd'),
+        inMonth: isSameMonth(date, currentDate),
+      }));
     } else {
-      // Month view - first 4 weeks
-      const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      // Month view - show the calendar grid for the current month
+      // Start from the first Sunday of the week containing month start
       const weekStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-      return eachDayOfInterval({
+      // End on the last Saturday of the week containing month end
+      const weekEnd = startOfWeek(monthEnd, { weekStartsOn: 0 });
+      const lastSaturday = addDays(weekEnd, 6);
+      
+      const dates = eachDayOfInterval({
         start: weekStart,
-        end: addDays(weekStart, 27),
-      }).map((date) => format(date, 'yyyy-MM-dd'));
+        end: lastSaturday,
+      });
+      
+      // Return all dates, marking which are in the current month
+      return dates.map((date) => ({
+        date: format(date, 'yyyy-MM-dd'),
+        inMonth: isSameMonth(date, currentDate),
+      }));
     }
   };
 
@@ -110,7 +131,12 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Study Calendar</h2>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Study Calendar</h2>
+            <p className="text-lg text-gray-600 dark:text-gray-400 mt-1">
+              {format(currentDate, 'MMMM yyyy')}
+            </p>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode('week')}
@@ -136,7 +162,17 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => setCurrentDate(addDays(currentDate, viewMode === 'week' ? -7 : -28))}
+            onClick={() => {
+              if (viewMode === 'week') {
+                // Move back one week, but stay within month bounds
+                const newDate = addDays(currentDate, -7);
+                setCurrentDate(newDate);
+              } else {
+                // Move to previous month
+                const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+                setCurrentDate(newDate);
+              }
+            }}
             className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg"
           >
             ← Previous
@@ -148,7 +184,17 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
             Today
           </button>
           <button
-            onClick={() => setCurrentDate(addDays(currentDate, viewMode === 'week' ? 7 : 28))}
+            onClick={() => {
+              if (viewMode === 'week') {
+                // Move forward one week, but stay within month bounds
+                const newDate = addDays(currentDate, 7);
+                setCurrentDate(newDate);
+              } else {
+                // Move to next month
+                const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+                setCurrentDate(newDate);
+              }
+            }}
             className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg"
           >
             Next →
@@ -168,23 +214,39 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
         ))}
 
         {/* Calendar days */}
-        {visibleDates.map((dateStr) => {
+        {visibleDates.map(({ date: dateStr, inMonth }) => {
           const date = parseISO(dateStr);
           const plan = allPlans.get(dateStr);
           const isToday = dateStr === today;
           const isSelected = selectedDate === dateStr;
           const isLoading = loadingDates.has(dateStr);
+          
+          // Skip rendering if not in month (for cleaner display)
+          if (!inMonth && viewMode === 'month') {
+            return (
+              <div
+                key={dateStr}
+                className="min-h-[120px] p-2 border rounded-lg border-gray-100 dark:border-gray-800 opacity-30"
+              >
+                <span className="text-sm text-gray-400 dark:text-gray-600">
+                  {format(date, 'd')}
+                </span>
+              </div>
+            );
+          }
 
           return (
             <div
               key={dateStr}
               onClick={() => handleDateClick(dateStr)}
               className={`min-h-[120px] p-2 border rounded-lg cursor-pointer transition-all ${
-                isToday
+                !inMonth
+                  ? 'border-gray-100 dark:border-gray-800 opacity-50'
+                  : isToday
                   ? 'border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                   : 'border-gray-200 dark:border-gray-700'
               } ${isSelected ? 'ring-2 ring-blue-500' : ''} ${
-                !plan ? 'hover:bg-gray-50 dark:hover:bg-gray-700' : ''
+                !plan && inMonth ? 'hover:bg-gray-50 dark:hover:bg-gray-700' : ''
               }`}
             >
               <div className="flex justify-between items-start mb-2">
@@ -222,7 +284,7 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
                     </div>
                   )}
                 </div>
-              ) : (
+              ) : inMonth ? (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -232,7 +294,7 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
                 >
                   + Add session
                 </button>
-              )}
+              ) : null}
             </div>
           );
         })}

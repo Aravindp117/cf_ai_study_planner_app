@@ -513,6 +513,7 @@ app.post("/api/sessions", async (c) => {
       goalId: string;
       durationMinutes: number;
       notes?: string;
+      date?: string; // Optional date in YYYY-MM-DD format
     }>();
 
     // Validation
@@ -527,10 +528,22 @@ app.post("/api/sessions", async (c) => {
       return c.json({ error: "durationMinutes must be non-negative" }, 400);
     }
 
+    // Use provided date or default to today
+    let sessionDate: string;
+    if (body.date) {
+      // Validate date format (YYYY-MM-DD) and convert to ISO string
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
+        return c.json({ error: "Invalid date format. Use YYYY-MM-DD" }, 400);
+      }
+      sessionDate = new Date(body.date + 'T00:00:00').toISOString();
+    } else {
+      sessionDate = new Date().toISOString();
+    }
+
     const sessionData: Omit<StudySession, "id"> = {
       topicId: body.topicId,
       goalId: body.goalId,
-      date: new Date().toISOString(),
+      date: sessionDate,
       durationMinutes: body.durationMinutes,
       notes: body.notes || "",
     };

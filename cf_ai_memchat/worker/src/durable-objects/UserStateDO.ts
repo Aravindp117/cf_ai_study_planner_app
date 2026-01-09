@@ -250,6 +250,23 @@ export class UserStateDO {
     );
     topic.masteryLevel = Math.min(100, topic.masteryLevel + masteryIncrease);
 
+    // Remove matching tasks from daily plans
+    // Match by topicId and goalId for the same date as the session
+    const sessionDate = sessionData.date.split('T')[0]; // Get YYYY-MM-DD
+    state.dailyPlans = state.dailyPlans.map((plan) => {
+      if (plan.date === sessionDate) {
+        // Filter out tasks that match this session's topicId and goalId
+        const remainingTasks = plan.tasks.filter(
+          (task) => !(task.topicId === sessionData.topicId && task.goalId === sessionData.goalId)
+        );
+        return {
+          ...plan,
+          tasks: remainingTasks,
+        };
+      }
+      return plan;
+    });
+
     await this.setState(state);
 
     return newSession;

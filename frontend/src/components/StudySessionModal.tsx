@@ -25,11 +25,14 @@ export default function StudySessionModal({
   const [selectedTopicId, setSelectedTopicId] = useState(topic?.id || '');
   const [durationMinutes, setDurationMinutes] = useState(30);
   const [notes, setNotes] = useState('');
+  const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0]); // YYYY-MM-DD format
 
   useEffect(() => {
     if (goal) setSelectedGoalId(goal.id);
     if (topic) setSelectedTopicId(topic.id);
-  }, [goal, topic]);
+    // Reset date to today when modal opens
+    setSessionDate(new Date().toISOString().split('T')[0]);
+  }, [goal, topic, isOpen]);
 
   const selectedGoal = goals.find((g) => g.id === selectedGoalId);
   const availableTopics = selectedGoal?.topics || [];
@@ -47,11 +50,13 @@ export default function StudySessionModal({
         topicId: selectedTopicId,
         durationMinutes,
         notes,
+        date: sessionDate, // Include date in session creation
       });
       refreshAll();
       onClose();
       setNotes('');
       setDurationMinutes(30);
+      setSessionDate(new Date().toISOString().split('T')[0]); // Reset to today
     } catch (error) {
       console.error('Failed to log session:', error);
       alert('Failed to log session. Please try again.');
@@ -122,6 +127,21 @@ export default function StudySessionModal({
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label htmlFor="session-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Date
+            </label>
+            <input
+              id="session-date"
+              name="date"
+              type="date"
+              value={sessionDate}
+              onChange={(e) => setSessionDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              required
+            />
           </div>
 
           <div>
