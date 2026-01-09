@@ -62,8 +62,11 @@ export class UserStateDO {
    */
   async setState(userState: UserState): Promise<void> {
     const savePromise = this.state.storage.put("userState", userState);
-    // Use waitUntil to ensure save completes even if request finishes
-    this.state.ctx.waitUntil(savePromise);
+    // Use waitUntil if ctx is available (for background persistence)
+    // Otherwise just await the promise directly
+    if (this.state.ctx && typeof this.state.ctx.waitUntil === 'function') {
+      this.state.ctx.waitUntil(savePromise);
+    }
     await savePromise;
   }
 
