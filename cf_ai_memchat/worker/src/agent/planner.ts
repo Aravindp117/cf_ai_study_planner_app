@@ -144,17 +144,36 @@ export async function generateDailyPlan(
 
   while (attempts < maxAttempts && !aiResult) {
     try {
-      const response = await ai.run("@cf/meta/llama-3-8b-instruct", {
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.7,
-        max_tokens: 1500,
-      });
+      console.log(`AI Agent: Attempt ${attempts + 1}/${maxAttempts} - Generating plan for ${targetDate}`);
+      
+      // Try multiple model names as Workers AI model names can vary
+      let response;
+      try {
+        response = await ai.run("@cf/meta/llama-3.1-8b-instruct", {
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.7,
+          max_tokens: 1500,
+        });
+      } catch (modelError: any) {
+        console.warn("AI Agent: Model llama-3.1-8b-instruct failed, trying llama-3-8b-instruct:", modelError.message);
+        // Fallback to alternative model name
+        response = await ai.run("@cf/meta/llama-3-8b-instruct", {
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          temperature: 0.7,
+          max_tokens: 1500,
+        });
+      }
 
       const responseText =
-        response?.response || response?.result || response?.text || "{}";
+        response?.response || response?.result || response?.text || JSON.stringify(response) || "{}";
+      
+      console.log(`AI Agent: Received response (length: ${responseText?.length || 0})`);
 
       // Extract JSON from response
       const parsed = extractJSON(responseText);

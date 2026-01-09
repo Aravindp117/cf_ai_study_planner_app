@@ -403,18 +403,31 @@ export class UserStateDO {
         try {
           const body = await request.json();
           console.log("Durable Object: Received create goal request:", JSON.stringify(body));
+          
+          // Validate required fields before calling addGoal
+          if (!body.title || typeof body.title !== "string") {
+            return new Response(
+              JSON.stringify({ error: "Title is required and must be a string" }),
+              {
+                status: 400,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              }
+            );
+          }
+
           const goal = await this.addGoal(body);
+          console.log("Durable Object: Successfully created goal:", goal.id);
           return new Response(JSON.stringify(goal), {
             status: 201,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         } catch (error: any) {
           console.error("Durable Object: Error in addGoal:", error);
-          console.error("Error stack:", error.stack);
+          console.error("Durable Object: Error stack:", error.stack);
           return new Response(
             JSON.stringify({ error: error.message || "Failed to create goal" }),
             {
-              status: 400,
+              status: 500,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             }
           );
@@ -444,7 +457,9 @@ export class UserStateDO {
       // DELETE /goals/:id - Delete a goal
       // Must check DELETE before POST /goals/:id/topics to avoid path conflicts
       if (path.startsWith("/goals/") && method === "DELETE" && !path.includes("/topics")) {
-        const goalId = path.replace("/goals/", "").split("/")[0].trim(); // Extract goalId, ignoring any trailing paths
+        // Extract and decode goalId from path
+        const rawGoalId = path.replace("/goals/", "").split("/")[0];
+        const goalId = decodeURIComponent(rawGoalId).trim(); // URL decode and trim
         if (!goalId) {
           return new Response(
             JSON.stringify({ error: "Goal ID required" }),
@@ -455,7 +470,7 @@ export class UserStateDO {
           );
         }
         try {
-          console.log("Durable Object: DELETE route - path:", path, "extracted goalId:", goalId);
+          console.log("Durable Object: DELETE route - path:", path, "raw goalId:", rawGoalId, "decoded goalId:", JSON.stringify(goalId));
           await this.deleteGoal(goalId);
           return new Response(JSON.stringify({ success: true }), {
             status: 200,
@@ -463,6 +478,7 @@ export class UserStateDO {
           });
         } catch (error: any) {
           console.error("Durable Object: Error deleting goal:", error);
+          console.error("Durable Object: Error stack:", error.stack);
           return new Response(
             JSON.stringify({ error: error.message || "Failed to delete goal" }),
             {

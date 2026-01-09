@@ -448,13 +448,18 @@ app.put("/api/goals/:id", async (c) => {
 app.delete("/api/goals/:id", async (c) => {
   try {
     const userId = c.get("userId");
-    const goalId = c.req.param("id");
+    let goalId = c.req.param("id");
+    
+    // URL decode the goal ID in case it was encoded
+    if (goalId) {
+      goalId = decodeURIComponent(goalId).trim();
+    }
 
     if (!goalId) {
       return c.json({ error: "Goal ID is required" }, 400);
     }
 
-    console.log("Worker: DELETE /api/goals/:id - userId:", userId, "goalId:", goalId);
+    console.log("Worker: DELETE /api/goals/:id - userId:", userId, "goalId:", JSON.stringify(goalId));
 
     // First, get all goals to see what IDs exist
     const stub = getUserStateDO(c.env, userId);
