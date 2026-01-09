@@ -128,6 +128,54 @@ Implemented Hono-based RESTful API with 8 endpoints and enhanced chat with comma
 - All routes use Durable Object for state management
 - Comprehensive error handling and validation
 - CORS enabled for all routes
+- Chat commands: `!today`, `!plan`, `!goals`, `!review`, `!help`
+
+### Phase 4: AI Agent Module ✅
+**Location:** `cf_ai_memchat/worker/src/agent/`
+
+Created intelligent AI agent for plan generation:
+- **planner.ts**: `generateDailyPlan()` function with retry logic (3 attempts)
+- **prompts.ts**: Structured prompt templates with full user context
+- Uses existing Workers AI binding (`@cf/meta/llama-3-8b-instruct`)
+- JSON extraction with fallback handling
+- Task validation against user goals and topics
+
+### Phase 5: React Frontend ✅
+**Location:** `frontend/src/`
+
+Complete React application with:
+- **Pages**: Dashboard, Goals, Calendar, Chat
+- **Components**: GoalCard, DailyPlanView, TopicDecayIndicator, StudySessionModal, CommandChat, Navigation
+- **State Management**: React Context for global state
+- **API Client**: Typed fetch helpers for all endpoints
+- **Routing**: React Router with navigation
+
+### Phase 6: Calendar & Memory Visualization ✅
+**Location:** `frontend/src/components/` and `frontend/src/utils/`
+
+Advanced visualization features:
+- **Calendar Component** (`Calendar.tsx`):
+  - Week/month view with planned tasks
+  - Tasks displayed as colored blocks by priority (red/yellow/green)
+  - Click tasks to see details
+  - Click empty slots to add ad-hoc study sessions
+  - Uses `date-fns` for date manipulation
+  - Fetches plans for visible dates automatically
+
+- **Memory Matrix Component** (`MemoryMatrix.tsx`):
+  - Grid and list view modes
+  - Shows all topics across all goals
+  - Color-coded by memory decay (green/yellow/orange/red)
+  - Displays: name, goal, last reviewed, review count, mastery level, next review date
+  - Sorted by urgency (red topics first)
+  - Click topic to log review session
+
+- **Memory Utilities** (`utils/memory.ts`):
+  - `getDecayColor()` - Calculate decay level based on days since review
+  - `getNextReviewDate()` - Spaced repetition intervals
+  - `getUrgencyScore()` - Urgency scoring for sorting
+  - `isDueForReview()` - Check if topic needs review
+  - `getDaysUntilReview()` - Days until next review
 
 ## Frontend Setup
 
@@ -240,6 +288,8 @@ Each user gets a unique ID stored in localStorage. This ID is used to maintain s
 - `react` - UI framework
 - `vite` - Build tool
 - `tailwindcss` - Styling
+- `react-router-dom` - Routing
+- `date-fns` - Date manipulation
 
 ## License
 
