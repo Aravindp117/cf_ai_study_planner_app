@@ -374,12 +374,23 @@ export class UserStateDO {
 
       // POST /goals - Add a new goal
       if (path === "/goals" && method === "POST") {
-        const body = await request.json();
-        const goal = await this.addGoal(body);
-        return new Response(JSON.stringify(goal), {
-          status: 201,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        try {
+          const body = await request.json();
+          const goal = await this.addGoal(body);
+          return new Response(JSON.stringify(goal), {
+            status: 201,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        } catch (error: any) {
+          console.error("Error in addGoal:", error);
+          return new Response(
+            JSON.stringify({ error: error.message || "Failed to create goal" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
       }
 
       // PUT /goals/:id - Update a goal
