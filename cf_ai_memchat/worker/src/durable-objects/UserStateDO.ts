@@ -58,16 +58,11 @@ export class UserStateDO {
 
   /**
    * Saves user state to storage
-   * Uses waitUntil to ensure persistence even if request completes early
+   * Note: ctx.waitUntil is only available during request handling
+   * Since we await the promise anyway, we don't strictly need waitUntil
    */
   async setState(userState: UserState): Promise<void> {
-    const savePromise = this.state.storage.put("userState", userState);
-    // Use waitUntil if ctx is available (for background persistence)
-    // Otherwise just await the promise directly
-    if (this.state.ctx && typeof this.state.ctx.waitUntil === 'function') {
-      this.state.ctx.waitUntil(savePromise);
-    }
-    await savePromise;
+    await this.state.storage.put("userState", userState);
   }
 
   /**
