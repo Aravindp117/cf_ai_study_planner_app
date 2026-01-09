@@ -25,7 +25,8 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
   // Load plans for visible dates
   useEffect(() => {
     const loadPlansForVisibleDates = async () => {
-      const dates = getVisibleDates();
+      const visibleDateObjects = getVisibleDates();
+      const dates = visibleDateObjects.map((d) => d.date);
       const datesToLoad = dates.filter(
         (date) => !loadedPlans.has(date) && !loadingDates.has(date)
       );
