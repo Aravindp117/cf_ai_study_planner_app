@@ -390,17 +390,27 @@ export class UserStateDO {
 
       // DELETE /goals/:id - Delete a goal
       if (path.startsWith("/goals/") && method === "DELETE") {
-        const goalId = path.split("/goals/")[1];
+        const goalId = path.split("/goals/")[1]?.split("/")[0]; // Extract goalId, ignoring any trailing paths
+        if (!goalId) {
+          return new Response(
+            JSON.stringify({ error: "Goal ID required" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
         try {
           await this.deleteGoal(goalId);
           return new Response(JSON.stringify({ success: true }), {
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         } catch (error: any) {
           return new Response(
             JSON.stringify({ error: error.message }),
             {
-              status: 404,
+              status: error.message.includes("not found") ? 404 : 400,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             }
           );

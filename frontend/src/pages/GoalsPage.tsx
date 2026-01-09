@@ -69,7 +69,8 @@ export default function GoalsPage() {
         refreshAll();
       } catch (error) {
         console.error('Failed to delete goal:', error);
-        alert('Failed to delete goal. Please try again.');
+        const errorMessage = error instanceof Error ? error.message : 'Failed to delete goal. Please try again.';
+        alert(errorMessage);
       }
     }
   };

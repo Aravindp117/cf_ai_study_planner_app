@@ -69,7 +69,10 @@ export const goalsApi = {
       method: 'DELETE',
       headers: getHeaders(),
     });
-    if (!response.ok) throw new Error('Failed to delete goal');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to delete goal' }));
+      throw new Error(errorData.error || `Failed to delete goal: ${response.statusText}`);
+    }
   },
 };
 
