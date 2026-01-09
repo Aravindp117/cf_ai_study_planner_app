@@ -16,6 +16,7 @@ interface AppContextType {
   refreshTodayPlan: () => Promise<void>;
   refreshReviewTopics: () => Promise<void>;
   refreshAll: () => Promise<void>;
+  addDailyPlan: (plan: DailyPlan) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -71,6 +72,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   };
 
+  const addDailyPlan = (plan: DailyPlan) => {
+    setDailyPlans((prev) => {
+      const filtered = prev.filter((p) => p.date !== plan.date);
+      return [...filtered, plan];
+    });
+    // If it's today's plan, also update todayPlan
+    const today = new Date().toISOString().split('T')[0];
+    if (plan.date === today) {
+      setTodayPlan(plan);
+    }
+  };
+
   useEffect(() => {
     refreshAll();
   }, []);
@@ -87,6 +100,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         refreshTodayPlan,
         refreshReviewTopics,
         refreshAll,
+        addDailyPlan,
       }}
     >
       {children}

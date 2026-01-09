@@ -5,6 +5,7 @@
 import { DailyPlan } from '../types';
 import { useApp } from '../context/AppContext';
 import { plansApi } from '../api/client';
+import toast from 'react-hot-toast';
 
 interface DailyPlanViewProps {
   plan: DailyPlan | null;
@@ -12,19 +13,21 @@ interface DailyPlanViewProps {
 }
 
 export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
-  const { refreshTodayPlan } = useApp();
+  const { refreshTodayPlan, addDailyPlan } = useApp();
 
   const handleGenerate = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       const generatedPlan = await plansApi.generate(today);
+      // Update context immediately so calendar grid shows the plan
+      addDailyPlan(generatedPlan);
       refreshTodayPlan();
       if (onRefresh) onRefresh();
-      console.log('Plan generated successfully:', generatedPlan);
-    } catch (error) {
+      toast.success('Plan generated successfully!');
+    } catch (error: any) {
       console.error('Failed to generate plan:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate plan. Please try again.';
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 

@@ -15,7 +15,7 @@ interface CalendarProps {
 }
 
 export default function Calendar({ viewMode: initialViewMode = 'week' }: CalendarProps) {
-  const { dailyPlans, refreshAll } = useApp();
+  const { dailyPlans, refreshAll, addDailyPlan } = useApp();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>(initialViewMode);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -320,12 +320,15 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
                   try {
                     const generatedPlan = await plansApi.generate(selectedDate);
                     toast.success(`Plan generated for ${format(parseISO(selectedDate), 'MMMM d, yyyy')}`);
-                    // Add the generated plan to loaded plans
+                    // Add the generated plan to loaded plans (for immediate display in calendar)
                     setLoadedPlans((prev) => {
                       const newMap = new Map(prev);
                       newMap.set(selectedDate, generatedPlan);
                       return newMap;
                     });
+                    // Update context's dailyPlans so it shows in the calendar grid and persists across components
+                    addDailyPlan(generatedPlan);
+                    // Refresh other data (goals, review topics, etc.)
                     refreshAll();
                   } catch (error: any) {
                     console.error('Failed to generate plan:', error);
