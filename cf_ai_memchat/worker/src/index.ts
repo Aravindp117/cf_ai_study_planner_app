@@ -618,7 +618,9 @@ app.post("/api/plan/generate", async (c) => {
     const userState = await stateResponse.json<UserState>();
 
     // Use AI agent to generate plan
+    console.log("Worker: Generating plan using AI agent for date:", date);
     const plan = await generateDailyPlan(userState, date, c.env.AI);
+    console.log("Worker: AI agent returned plan with", plan.tasks.length, "tasks");
 
     // Store the plan
     const planResponse = await stub.fetch("https://internal/daily-plans", {
@@ -627,16 +629,19 @@ app.post("/api/plan/generate", async (c) => {
       body: JSON.stringify(plan),
     });
 
-    if (planResponse.status !== 201) {
-      const error = await planResponse.json();
-      return c.json(error, planResponse.status);
+    if (!planResponse.ok) {
+      const errorData = await planResponse.json().catch(() => ({ error: "Failed to store plan" }));
+      console.error("Worker: Failed to store plan:", errorData);
+      return c.json({ error: errorData.error || "Failed to store plan" }, planResponse.status);
     }
 
     const storedPlan = await planResponse.json<DailyPlan>();
+    console.log("Worker: Successfully stored plan for date:", date);
     return c.json(storedPlan, 201);
-  } catch (err) {
-    console.error("Generate plan error:", err);
-    return c.json({ error: "Internal server error" }, 500);
+  } catch (err: any) {
+    console.error("Worker: Generate plan error:", err);
+    console.error("Worker: Error stack:", err.stack);
+    return c.json({ error: err.message || "Internal server error" }, 500);
   }
 });
 
