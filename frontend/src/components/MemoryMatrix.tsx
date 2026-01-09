@@ -64,13 +64,13 @@ export default function MemoryMatrix() {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Memory Matrix</h2>
-        <div className="flex gap-2">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-4 mb-6">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Memory Matrix</h2>
+        <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={() => setViewMode('grid')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base whitespace-nowrap ${
               viewMode === 'grid'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
@@ -80,7 +80,7 @@ export default function MemoryMatrix() {
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base whitespace-nowrap ${
               viewMode === 'list'
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
@@ -91,22 +91,22 @@ export default function MemoryMatrix() {
         </div>
       </div>
 
-      <div className="mb-4 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+      <div className="mb-4 flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-          <span>Fresh (&lt; 3 days)</span>
+          <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
+          <span className="whitespace-nowrap">Fresh (&lt; 3 days)</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-          <span>Good (3-7 days)</span>
+          <div className="w-3 h-3 bg-yellow-500 rounded-full flex-shrink-0"></div>
+          <span className="whitespace-nowrap">Good (3-7 days)</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-          <span>Decaying (7-14 days)</span>
+          <div className="w-3 h-3 bg-orange-500 rounded-full flex-shrink-0"></div>
+          <span className="whitespace-nowrap">Decaying (7-14 days)</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-          <span>Urgent (&gt; 14 days)</span>
+          <div className="w-3 h-3 bg-red-500 rounded-full flex-shrink-0"></div>
+          <span className="whitespace-nowrap">Urgent (&gt; 14 days)</span>
         </div>
       </div>
 

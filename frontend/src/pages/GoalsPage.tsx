@@ -119,27 +119,34 @@ export default function GoalsPage() {
           </button>
         </div>
 
+        <div className="mb-6 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
+            Active Goals ({activeGoals.length})
+          </h2>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 sm:px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm sm:text-base whitespace-nowrap flex-shrink-0 self-start sm:self-auto"
+          >
+            + Create Goal
+          </button>
+        </div>
+
         {activeGoals.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
-              Active Goals ({activeGoals.length})
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {activeGoals.map((goal) => (
-                <GoalCard key={goal.id} goal={goal} onDelete={handleDelete} />
-              ))}
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {activeGoals.map((goal) => (
+              <GoalCard key={goal.id} goal={goal} onDelete={handleDelete} />
+            ))}
           </div>
         )}
 
         {activeGoals.length === 0 && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 sm:p-12 text-center">
             <p className="text-gray-500 dark:text-gray-400 mb-4">
               No active goals yet. Create your first goal to get started!
             </p>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm sm:text-base"
             >
               Create Goal
             </button>

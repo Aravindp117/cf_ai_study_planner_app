@@ -129,21 +129,21 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
   const today = format(new Date(), 'yyyy-MM-dd');
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 sm:p-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
               Study Calendar - {format(currentDate, 'MMMM yyyy')}
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 hidden sm:block">
               Click a date to view or create a plan
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-shrink-0">
             <button
               onClick={() => setViewMode('week')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm whitespace-nowrap ${
                 viewMode === 'week'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
@@ -153,7 +153,7 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
             </button>
             <button
               onClick={() => setViewMode('month')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-3 sm:px-4 py-2 rounded-lg font-medium transition-colors text-sm whitespace-nowrap ${
                 viewMode === 'month'
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
@@ -163,7 +163,7 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
             </button>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           <button
             onClick={() => {
               if (viewMode === 'week') {
@@ -176,13 +176,13 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
                 setCurrentDate(newDate);
               }
             }}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg"
+            className="px-3 sm:px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg text-sm whitespace-nowrap"
           >
-            ← Previous
+            ← Prev
           </button>
           <button
             onClick={() => setCurrentDate(new Date())}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+            className="px-3 sm:px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm whitespace-nowrap"
           >
             Today
           </button>
@@ -198,7 +198,7 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
                 setCurrentDate(newDate);
               }
             }}
-            className="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg"
+            className="px-3 sm:px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 rounded-lg text-sm whitespace-nowrap"
           >
             Next →
           </button>
