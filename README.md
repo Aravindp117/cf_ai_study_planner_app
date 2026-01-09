@@ -34,13 +34,15 @@ Complete frontend and backend for a Cloudflare AI Chat application with memory a
 - ✅ CORS headers configured
 - 🚀 Serverless deployment
 
-### Study Planner (New - Phases 1-3)
+### Study Planner (Phases 1-6)
 - 📚 Goal management (exams, projects, commitments)
 - 📖 Topic tracking with spaced repetition
 - 📝 Study session logging
 - 🤖 AI-powered daily plan generation
 - 🎯 Memory decay tracking (green/yellow/orange/red)
 - ⚡ Urgency scoring based on deadlines and priority
+- 📅 Calendar visualization with week/month views
+- 🧠 Memory Matrix for topic decay visualization
 
 ## Implementation Phases
 
@@ -89,7 +91,7 @@ All methods include proper error handling, validation, and HTTP response codes.
 ### Phase 3: Worker API Routes ✅
 **Location:** `cf_ai_memchat/worker/src/index.ts`
 
-Implemented Hono-based RESTful API with 8 endpoints:
+Implemented Hono-based RESTful API with 8 endpoints and enhanced chat with command detection:
 
 1. **POST /api/goals** - Create new goal
    - Body: `{ title, type, deadline, priority, topics: string[] }`

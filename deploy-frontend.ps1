@@ -22,6 +22,7 @@ if (-not (Test-Path "dist")) {
 
 # Deploy
 Write-Host "📦 Deploying to Cloudflare Pages..." -ForegroundColor Yellow
+Write-Host "Note: If project doesn't exist, it will be created automatically." -ForegroundColor Cyan
 npx wrangler pages deploy dist --project-name=cloudflare-ai-chat
 
 # Return to root

@@ -5,6 +5,8 @@
 import { useApp } from '../context/AppContext';
 import DailyPlanView from '../components/DailyPlanView';
 import GoalCard from '../components/GoalCard';
+import Calendar from '../components/Calendar';
+import MemoryMatrix from '../components/MemoryMatrix';
 import TopicDecayIndicator from '../components/TopicDecayIndicator';
 import { calculateMemoryDecayLevel, getUrgencyScore } from '../types';
 import { goalsApi } from '../api/client';
@@ -123,7 +125,7 @@ export default function DashboardPage() {
         </div>
 
         {urgentGoals.length > 0 && (
-          <div>
+          <div className="mb-8">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
               Urgent Goals
             </h2>
@@ -138,6 +140,14 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        <div className="mb-8">
+          <Calendar />
+        </div>
+
+        <div>
+          <MemoryMatrix />
+        </div>
       </div>
     </div>
   );
