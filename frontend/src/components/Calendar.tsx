@@ -298,6 +298,7 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
           const isToday = dateStr === today;
           const isSelected = selectedDate === dateStr;
           const isLoading = loadingDates.has(dateStr);
+          const isGenerating = generatingPlan === dateStr;
           
           // Skip rendering if not in month (for cleaner display)
           if (!inMonth && viewMode === 'month') {
