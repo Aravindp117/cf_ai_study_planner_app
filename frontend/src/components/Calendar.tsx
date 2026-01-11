@@ -131,8 +131,39 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
   };
 
   const handleEmptySlotClick = (date: string) => {
+    // Only allow adding sessions for today or past dates
+    const today = format(new Date(), 'yyyy-MM-dd');
+    if (date > today) {
+      toast.error('Cannot add sessions for future dates');
+      return;
+    }
     setSelectedDate(date);
     setShowSessionModal(true);
+  };
+
+  const handleDeletePlan = async (date: string) => {
+    if (!confirm(`Are you sure you want to delete the plan for ${format(parseISO(date), 'MMMM d, yyyy')}?`)) {
+      return;
+    }
+    try {
+      await plansApi.delete(date);
+      toast.success('Plan deleted successfully');
+      // Remove from loaded plans
+      setLoadedPlans((prev) => {
+        const newMap = new Map(prev);
+        newMap.delete(date);
+        return newMap;
+      });
+      // Remove from context
+      refreshAll();
+      // Clear selection if this was the selected date
+      if (selectedDate === date) {
+        setSelectedDate(null);
+      }
+    } catch (error: any) {
+      console.error('Failed to delete plan:', error);
+      toast.error(error.message || 'Failed to delete plan. Please try again.');
+    }
   };
 
   const visibleDates = getVisibleDates();
@@ -299,8 +330,20 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
                       +{plan.tasks.length - 3} more
                     </div>
                   )}
+                  {/* Show Add Session button even when plan exists, but only for today or past dates */}
+                  {dateStr <= today && inMonth && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEmptySlotClick(dateStr);
+                      }}
+                      className="w-full text-xs text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 py-1 mt-1"
+                    >
+                      + Add session
+                    </button>
+                  )}
                 </div>
-              ) : inMonth ? (
+              ) : inMonth && dateStr <= today ? (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -323,37 +366,47 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
             <h3 className="font-semibold text-gray-900 dark:text-white">
               {format(parseISO(selectedDate), 'EEEE, MMMM d, yyyy')}
             </h3>
-            {!allPlans.has(selectedDate) && (
-              <button
-                onClick={async () => {
-                  if (!selectedDate) return;
-                  setGeneratingPlan(selectedDate);
-                  try {
-                    const generatedPlan = await plansApi.generate(selectedDate);
-                    toast.success(`Plan generated for ${format(parseISO(selectedDate), 'MMMM d, yyyy')}`);
-                    // Add the generated plan to loaded plans (for immediate display in calendar)
-                    setLoadedPlans((prev) => {
-                      const newMap = new Map(prev);
-                      newMap.set(selectedDate, generatedPlan);
-                      return newMap;
-                    });
-                    // Update context's dailyPlans so it shows in the calendar grid and persists across components
-                    addDailyPlan(generatedPlan);
-                    // Refresh other data (goals, review topics, etc.)
-                    refreshAll();
-                  } catch (error: any) {
-                    console.error('Failed to generate plan:', error);
-                    toast.error(error.message || 'Failed to generate plan. Please try again.');
-                  } finally {
-                    setGeneratingPlan(null);
-                  }
-                }}
-                disabled={generatingPlan === selectedDate}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm sm:text-base whitespace-nowrap flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {generatingPlan === selectedDate ? 'Generating...' : 'Generate Plan'}
-              </button>
-            )}
+            <div className="flex gap-2 flex-shrink-0">
+              {allPlans.has(selectedDate) && (
+                <button
+                  onClick={() => handleDeletePlan(selectedDate)}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors text-sm sm:text-base whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Delete Plan
+                </button>
+              )}
+              {!allPlans.has(selectedDate) && (
+                <button
+                  onClick={async () => {
+                    if (!selectedDate) return;
+                    setGeneratingPlan(selectedDate);
+                    try {
+                      const generatedPlan = await plansApi.generate(selectedDate);
+                      toast.success(`Plan generated for ${format(parseISO(selectedDate), 'MMMM d, yyyy')}`);
+                      // Add the generated plan to loaded plans (for immediate display in calendar)
+                      setLoadedPlans((prev) => {
+                        const newMap = new Map(prev);
+                        newMap.set(selectedDate, generatedPlan);
+                        return newMap;
+                      });
+                      // Update context's dailyPlans so it shows in the calendar grid and persists across components
+                      addDailyPlan(generatedPlan);
+                      // Refresh other data (goals, review topics, etc.)
+                      refreshAll();
+                    } catch (error: any) {
+                      console.error('Failed to generate plan:', error);
+                      toast.error(error.message || 'Failed to generate plan. Please try again.');
+                    } finally {
+                      setGeneratingPlan(null);
+                    }
+                  }}
+                  disabled={generatingPlan === selectedDate}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm sm:text-base whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {generatingPlan === selectedDate ? 'Generating...' : 'Generate Plan'}
+                </button>
+              )}
+            </div>
           </div>
           {allPlans.has(selectedDate) && allPlans.get(selectedDate) ? (
             <div>

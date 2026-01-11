@@ -13,7 +13,7 @@ interface DailyPlanViewProps {
 }
 
 export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
-  const { refreshTodayPlan, addDailyPlan, goals } = useApp();
+  const { refreshTodayPlan, addDailyPlan, goals, refreshAll } = useApp();
 
   // Helper function to get topic name from task
   const getTopicName = (task: PlannedTask): string => {
@@ -36,6 +36,22 @@ export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
       console.error('Failed to generate plan:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate plan. Please try again.';
       toast.error(errorMessage);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!plan) return;
+    if (!confirm(`Are you sure you want to delete today's plan?`)) {
+      return;
+    }
+    try {
+      await plansApi.delete(plan.date);
+      toast.success('Plan deleted successfully');
+      refreshAll();
+      if (onRefresh) onRefresh();
+    } catch (error: any) {
+      console.error('Failed to delete plan:', error);
+      toast.error(error.message || 'Failed to delete plan. Please try again.');
     }
   };
 
@@ -75,12 +91,20 @@ export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
             })}
           </p>
         </div>
-        <button
-          onClick={handleGenerate}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm sm:text-base font-medium transition-colors whitespace-nowrap flex-shrink-0"
-        >
-          Regenerate
-        </button>
+        <div className="flex gap-2 flex-shrink-0">
+          <button
+            onClick={handleDelete}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm sm:text-base font-medium transition-colors whitespace-nowrap"
+          >
+            Delete Plan
+          </button>
+          <button
+            onClick={handleGenerate}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm sm:text-base font-medium transition-colors whitespace-nowrap"
+          >
+            Regenerate
+          </button>
+        </div>
       </div>
 
       {plan.reasoning && (

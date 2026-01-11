@@ -415,6 +415,15 @@ export class UserStateDO {
   }
 
   /**
+   * Deletes a daily plan for a specific date
+   */
+  async deleteDailyPlan(date: string): Promise<void> {
+    const state = await this.getState();
+    state.dailyPlans = state.dailyPlans.filter((p) => p.date !== date);
+    await this.setState(state);
+  }
+
+  /**
    * Gets all goals with memory decay information for each topic
    */
   async getGoalsWithDecay(): Promise<GoalWithDecay[]> {
@@ -652,9 +661,47 @@ export class UserStateDO {
         }
       }
 
+      // DELETE /daily-plans/:date - Delete a daily plan
+      if (path.startsWith("/daily-plans/") && method === "DELETE") {
+        const date = path.split("/daily-plans/")[1]?.split("/")[0]?.trim();
+        if (!date) {
+          return new Response(
+            JSON.stringify({ error: "Date is required" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+        try {
+          await this.deleteDailyPlan(date);
+          return new Response(JSON.stringify({ success: true }), {
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        } catch (error: any) {
+          return new Response(
+            JSON.stringify({ error: error.message || "Failed to delete plan" }),
+            {
+              status: 404,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+      }
+
       // GET /daily-plans/:date - Get a daily plan
       if (path.startsWith("/daily-plans/") && method === "GET") {
-        const date = path.split("/daily-plans/")[1];
+        const date = path.split("/daily-plans/")[1]?.split("/")[0]?.trim();
+        if (!date) {
+          return new Response(
+            JSON.stringify({ error: "Date is required" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
         const plan = await this.getDailyPlan(date);
         if (!plan) {
           return new Response(

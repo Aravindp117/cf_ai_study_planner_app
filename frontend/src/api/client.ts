@@ -141,6 +141,19 @@ export const plansApi = {
     }
     return response.json();
   },
+
+  async delete(date: string): Promise<void> {
+    const userId = getUserId();
+    const encodedDate = encodeURIComponent(date);
+    const response = await fetch(`${API_URL}/api/plan/${encodedDate}?userId=${encodeURIComponent(userId)}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to delete plan' }));
+      throw new Error(errorData.error || `Failed to delete plan: ${response.statusText}`);
+    }
+  },
 };
 
 // Review API
