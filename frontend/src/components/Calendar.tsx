@@ -74,26 +74,26 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
   loadedPlans.forEach((plan, date) => allPlans.set(date, plan));
 
   const getVisibleDates = (): Array<{ date: string; inMonth: boolean }> => {
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
-    
     if (viewMode === 'week') {
-      // For week view, find the week that contains the first day of the current month
-      // Start from Sunday of that week
-      const weekStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+      // Week view - show the week containing currentDate
+      // Start from Sunday of the week containing currentDate
+      const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
       const dates = eachDayOfInterval({
         start: weekStart,
         end: addDays(weekStart, 6),
       });
       
       // Return all 7 days, but mark which are in the current month
+      const monthStart = startOfMonth(currentDate);
       return dates.map((date) => ({
         date: format(date, 'yyyy-MM-dd'),
-        inMonth: isSameMonth(date, currentDate),
+        inMonth: isSameMonth(date, monthStart),
       }));
     } else {
-      // Month view - show the calendar grid for the current month
+      // Month view - show the full calendar grid for the current month
       // Start from the first Sunday of the week containing month start
+      const monthStart = startOfMonth(currentDate);
+      const monthEnd = endOfMonth(currentDate);
       const weekStart = startOfWeek(monthStart, { weekStartsOn: 0 });
       // End on the last Saturday of the week containing month end
       const weekEnd = startOfWeek(monthEnd, { weekStartsOn: 0 });
