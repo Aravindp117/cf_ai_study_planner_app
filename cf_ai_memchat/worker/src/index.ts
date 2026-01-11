@@ -293,12 +293,13 @@ app.post("/api/chat", async (c) => {
       return c.json({ reply: commandResult.reply });
     }
 
-    // Not a command, pass through to conversational AI
+    // Not a command, pass through to conversational AI with study planner context
+    // The Memory DO will maintain conversation history (last 10 turns)
     const stub = getMemoryDO(c.env, userId);
     const doResponse = await stub.fetch("https://internal/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, userId }),
     });
 
     const data = await doResponse.json();

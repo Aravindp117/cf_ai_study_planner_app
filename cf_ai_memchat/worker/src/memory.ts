@@ -1,13 +1,14 @@
 // worker/src/memory.ts
 interface Env {
   AI: any;
+  USER_STATE?: DurableObjectNamespace;
 }
 
 export class Memory {
   state: DurableObjectState;
-  env: { AI: any };
+  env: Env;
 
-  constructor(state: DurableObjectState, env: { AI: any }) {
+  constructor(state: DurableObjectState, env: Env) {
     this.state = state;
     this.env = env;
   }
@@ -29,6 +30,7 @@ export class Memory {
         });
       }
       const message: string = body?.message ?? "";
+      const userId: string = body?.userId ?? "default-user";
       if (!message || typeof message !== "string") {
         return new Response(JSON.stringify({ error: "`message` is required (string)" }), {
           status: 400,
@@ -40,9 +42,12 @@ export class Memory {
       const turns: Array<{ role: "user" | "assistant"; content: string }> =
         (await this.state.storage.get("turns")) || [];
 
+      // Build system prompt - enhanced to include study planner context awareness
+      let systemPrompt = "You are a helpful study planner assistant. You help students manage their study goals, track progress, and plan their daily study sessions. Be conversational, helpful, and remember context from previous conversations.";
+
       // Build prompt with a system instruction + memory turns + new user msg
       const messages = [
-        { role: "system", content: "You are a concise, helpful assistant with short, direct answers." },
+        { role: "system", content: systemPrompt },
         ...turns.map(t => ({ role: t.role, content: t.content })),
         { role: "user", content: message }
       ];
