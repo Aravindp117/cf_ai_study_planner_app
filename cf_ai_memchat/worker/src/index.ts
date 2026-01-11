@@ -664,6 +664,40 @@ app.post("/api/plan/generate", async (c) => {
 
     const userState = await stateResponse.json<UserState>();
 
+    // Special logic for today's plan: check yesterday's sessions
+    const today = new Date().toISOString().split("T")[0];
+    if (date === today) {
+      // Calculate yesterday's date
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+      // Check if sessions were logged yesterday
+      const yesterdaySessions = userState.sessions.filter(
+        (session) => session.date.split("T")[0] === yesterdayStr
+      );
+
+      // Check if today's plan already exists
+      const existingPlanResponse = await stub.fetch(
+        `https://internal/daily-plans/${date}`,
+        { method: "GET" }
+      );
+
+      const hasExistingPlan = existingPlanResponse.status === 200;
+
+      // If no sessions yesterday AND plan exists, keep existing plan
+      if (yesterdaySessions.length === 0 && hasExistingPlan) {
+        const existingPlan = await existingPlanResponse.json<DailyPlan>();
+        console.log("Worker: No sessions yesterday, keeping existing plan");
+        return c.json(existingPlan, 200);
+      }
+
+      // If sessions were logged yesterday OR no plan exists, generate new plan
+      if (yesterdaySessions.length > 0) {
+        console.log(`Worker: ${yesterdaySessions.length} sessions logged yesterday, generating new plan based on progress`);
+      }
+    }
+
     // Use AI agent to generate plan
     console.log("Worker: Generating plan using AI agent for date:", date);
     const plan = await generateDailyPlan(userState, date, c.env.AI);

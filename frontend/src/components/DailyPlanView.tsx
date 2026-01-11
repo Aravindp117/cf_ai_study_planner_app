@@ -13,7 +13,7 @@ interface DailyPlanViewProps {
 }
 
 export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
-  const { refreshTodayPlan, addDailyPlan, goals, refreshAll } = useApp();
+  const { refreshTodayPlan, addDailyPlan, removeDailyPlan, goals } = useApp();
 
   // Helper function to get topic name from task
   const getTopicName = (task: PlannedTask): string => {
@@ -41,13 +41,21 @@ export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
 
   const handleDelete = async () => {
     if (!plan) return;
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Only allow deleting today's plan
+    if (plan.date !== today) {
+      toast.error('Can only delete today\'s plan');
+      return;
+    }
+
     if (!confirm(`Are you sure you want to delete today's plan?`)) {
       return;
     }
     try {
       await plansApi.delete(plan.date);
       toast.success('Plan deleted successfully');
-      refreshAll();
+      removeDailyPlan(plan.date);
       if (onRefresh) onRefresh();
     } catch (error: any) {
       console.error('Failed to delete plan:', error);

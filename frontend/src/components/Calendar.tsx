@@ -15,7 +15,7 @@ interface CalendarProps {
 }
 
 export default function Calendar({ viewMode: initialViewMode = 'week' }: CalendarProps) {
-  const { dailyPlans, refreshAll, addDailyPlan, goals } = useApp();
+  const { dailyPlans, refreshAll, addDailyPlan, removeDailyPlan, goals } = useApp();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>(initialViewMode);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -142,7 +142,15 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
   };
 
   const handleDeletePlan = async (date: string) => {
-    if (!confirm(`Are you sure you want to delete the plan for ${format(parseISO(date), 'MMMM d, yyyy')}?`)) {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    
+    // Prevent deleting past plans (yesterday and earlier)
+    if (date < today) {
+      toast.error('Cannot delete past plans');
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete the plan for ${format(dateObj, 'MMMM d, yyyy')}?`)) {
       return;
     }
     try {
@@ -155,7 +163,7 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
         return newMap;
       });
       // Remove from context
-      refreshAll();
+      removeDailyPlan(date);
       // Clear selection if this was the selected date
       if (selectedDate === date) {
         setSelectedDate(null);
