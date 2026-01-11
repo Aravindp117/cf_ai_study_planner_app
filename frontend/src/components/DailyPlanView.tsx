@@ -2,7 +2,7 @@
  * Daily Plan View Component
  */
 
-import { DailyPlan } from '../types';
+import { DailyPlan, PlannedTask } from '../types';
 import { useApp } from '../context/AppContext';
 import { plansApi } from '../api/client';
 import toast from 'react-hot-toast';
@@ -13,7 +13,15 @@ interface DailyPlanViewProps {
 }
 
 export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
-  const { refreshTodayPlan, addDailyPlan } = useApp();
+  const { refreshTodayPlan, addDailyPlan, goals } = useApp();
+
+  // Helper function to get topic name from task
+  const getTopicName = (task: PlannedTask): string => {
+    const goal = goals.find((g) => g.id === task.goalId);
+    if (!goal) return 'Unknown Topic';
+    const topic = goal.topics.find((t) => t.id === task.topicId);
+    return topic?.name || 'Unknown Topic';
+  };
 
   const handleGenerate = async () => {
     try {
@@ -102,7 +110,7 @@ export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-lg">{taskTypeEmoji}</span>
                     <span className="font-medium text-gray-900 dark:text-white">
-                      Task {index + 1}
+                      {getTopicName(task)}
                     </span>
                     <span className="text-xs text-gray-600 dark:text-gray-400">
                       {task.type}

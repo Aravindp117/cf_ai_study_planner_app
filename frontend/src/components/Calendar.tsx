@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { format, startOfWeek, addDays, eachDayOfInterval, parseISO, startOfMonth, endOfMonth, isSameMonth } from 'date-fns';
 import { useApp } from '../context/AppContext';
-import { DailyPlan } from '../types';
+import { DailyPlan, PlannedTask } from '../types';
 import { plansApi } from '../api/client';
 import StudySessionModal from './StudySessionModal';
 import toast from 'react-hot-toast';
@@ -15,7 +15,7 @@ interface CalendarProps {
 }
 
 export default function Calendar({ viewMode: initialViewMode = 'week' }: CalendarProps) {
-  const { dailyPlans, refreshAll, addDailyPlan } = useApp();
+  const { dailyPlans, refreshAll, addDailyPlan, goals } = useApp();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>(initialViewMode);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -23,6 +23,14 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
   const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
   const [loadedPlans, setLoadedPlans] = useState<Map<string, DailyPlan>>(new Map());
   const [generatingPlan, setGeneratingPlan] = useState<string | null>(null);
+
+  // Helper function to get topic name from task
+  const getTopicName = (task: PlannedTask): string => {
+    const goal = goals.find((g) => g.id === task.goalId);
+    if (!goal) return 'Unknown Topic';
+    const topic = goal.topics.find((t) => t.id === task.topicId);
+    return topic?.name || 'Unknown Topic';
+  };
 
   // Load plans for visible dates
   useEffect(() => {
@@ -271,18 +279,21 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
 
               {plan && plan.tasks.length > 0 ? (
                 <div className="space-y-1">
-                  {plan.tasks.slice(0, 3).map((task, index) => (
-                    <div
-                      key={index}
-                      className={`${getPriorityColor(
-                        task.priority
-                      )} text-white text-xs p-1 rounded truncate`}
-                      title={`${task.type}: ${task.estimatedMinutes}min (Priority ${task.priority})`}
-                    >
-                      {task.type === 'review' ? '🔄' : task.type === 'study' ? '📚' : '💼'}{' '}
-                      {task.estimatedMinutes}m
-                    </div>
-                  ))}
+                  {plan.tasks.slice(0, 3).map((task, index) => {
+                    const topicName = getTopicName(task);
+                    return (
+                      <div
+                        key={index}
+                        className={`${getPriorityColor(
+                          task.priority
+                        )} text-white text-xs p-1 rounded truncate`}
+                        title={`${task.type}: ${topicName} - ${task.estimatedMinutes}min (Priority ${task.priority})`}
+                      >
+                        {task.type === 'review' ? '🔄' : task.type === 'study' ? '📚' : '💼'}{' '}
+                        {topicName.length > 12 ? topicName.substring(0, 12) + '...' : topicName} - {task.estimatedMinutes}m
+                      </div>
+                    );
+                  })}
                   {plan.tasks.length > 3 && (
                     <div className="text-xs text-gray-500">
                       +{plan.tasks.length - 3} more
@@ -350,22 +361,25 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
                 {allPlans.get(selectedDate)!.reasoning}
               </p>
               <div className="space-y-2">
-                {allPlans.get(selectedDate)!.tasks.map((task, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded"
-                  >
-                    <div>
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        {task.type === 'review' ? '🔄 Review' : task.type === 'study' ? '📚 Study' : '💼 Project'}: {task.estimatedMinutes} min
+                {allPlans.get(selectedDate)!.tasks.map((task, index) => {
+                  const topicName = getTopicName(task);
+                  return (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded"
+                    >
+                      <div>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {task.type === 'review' ? '🔄 Review' : task.type === 'study' ? '📚 Study' : '💼 Project'}: <span className="font-semibold">{topicName}</span> - {task.estimatedMinutes} min
+                        </span>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{task.reasoning}</p>
+                      </div>
+                      <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)} text-white`}>
+                        P{task.priority}
                       </span>
-                      <p className="text-xs text-gray-600 dark:text-gray-400">{task.reasoning}</p>
                     </div>
-                    <span className={`px-2 py-1 rounded text-xs ${getPriorityColor(task.priority)} text-white`}>
-                      P{task.priority}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
