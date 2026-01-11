@@ -2,6 +2,7 @@
  * Daily Plan View Component
  */
 
+import { useState } from 'react';
 import { DailyPlan, PlannedTask } from '../types';
 import { useApp } from '../context/AppContext';
 import { plansApi } from '../api/client';
@@ -14,6 +15,8 @@ interface DailyPlanViewProps {
 
 export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
   const { refreshTodayPlan, addDailyPlan, removeDailyPlan, goals } = useApp();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Helper function to get topic name from task
   const getTopicName = (task: PlannedTask): string => {
@@ -24,6 +27,7 @@ export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
   };
 
   const handleGenerate = async () => {
+    setIsGenerating(true);
     try {
       const today = new Date().toISOString().split('T')[0];
       const generatedPlan = await plansApi.generate(today);
@@ -36,6 +40,8 @@ export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
       console.error('Failed to generate plan:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate plan. Please try again.';
       toast.error(errorMessage);
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -52,6 +58,8 @@ export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
     if (!confirm(`Are you sure you want to delete today's plan?`)) {
       return;
     }
+    
+    setIsDeleting(true);
     try {
       await plansApi.delete(plan.date);
       toast.success('Plan deleted successfully');
@@ -60,6 +68,8 @@ export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
     } catch (error: any) {
       console.error('Failed to delete plan:', error);
       toast.error(error.message || 'Failed to delete plan. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -71,9 +81,10 @@ export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
         </p>
         <button
           onClick={handleGenerate}
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+          disabled={isGenerating}
+          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Generate Today's Plan
+          {isGenerating ? 'Generating...' : 'Generate Today\'s Plan'}
         </button>
       </div>
     );

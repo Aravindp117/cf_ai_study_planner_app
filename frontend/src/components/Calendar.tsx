@@ -23,6 +23,7 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
   const [loadingDates, setLoadingDates] = useState<Set<string>>(new Set());
   const [loadedPlans, setLoadedPlans] = useState<Map<string, DailyPlan>>(new Map());
   const [generatingPlan, setGeneratingPlan] = useState<string | null>(null);
+  const [deletingPlan, setDeletingPlan] = useState<string | null>(null);
 
   // Helper function to get topic name from task
   const getTopicName = (task: PlannedTask): string => {
@@ -126,8 +127,32 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
     return 'bg-green-500';
   };
 
-  const handleDateClick = (date: string) => {
+  const handleDateClick = async (date: string) => {
     setSelectedDate(date);
+    // If date is not loaded and not in context, load it
+    if (!allPlans.has(date) && !loadingDates.has(date)) {
+      setLoadingDates((prev) => new Set([...prev, date]));
+      try {
+        const plan = await plansApi.get(date);
+        if (plan) {
+          setLoadedPlans((prev) => {
+            const newMap = new Map(prev);
+            newMap.set(date, plan);
+            return newMap;
+          });
+          addDailyPlan(plan);
+        }
+      } catch (error) {
+        // Plan doesn't exist - that's fine, we'll show "Generate Plan" button
+        console.log(`No plan found for ${date}`);
+      } finally {
+        setLoadingDates((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(date);
+          return newSet;
+        });
+      }
+    }
   };
 
   const handleEmptySlotClick = (date: string) => {
@@ -153,6 +178,8 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
     if (!confirm(`Are you sure you want to delete the plan for ${format(parseISO(date), 'MMMM d, yyyy')}?`)) {
       return;
     }
+    
+    setDeletingPlan(date);
     try {
       await plansApi.delete(date);
       toast.success('Plan deleted successfully');
@@ -164,13 +191,12 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
       });
       // Remove from context
       removeDailyPlan(date);
-      // Clear selection if this was the selected date
-      if (selectedDate === date) {
-        setSelectedDate(null);
-      }
+      // Don't clear selection - keep it selected so user can see "Generate Plan" button
     } catch (error: any) {
       console.error('Failed to delete plan:', error);
       toast.error(error.message || 'Failed to delete plan. Please try again.');
+    } finally {
+      setDeletingPlan(null);
     }
   };
 
@@ -378,9 +404,10 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
               {allPlans.has(selectedDate) && (
                 <button
                   onClick={() => handleDeletePlan(selectedDate)}
+                  disabled={deletingPlan === selectedDate}
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors text-sm sm:text-base whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Delete Plan
+                  {deletingPlan === selectedDate ? 'Deleting...' : 'Delete Plan'}
                 </button>
               )}
               {!allPlans.has(selectedDate) && (
