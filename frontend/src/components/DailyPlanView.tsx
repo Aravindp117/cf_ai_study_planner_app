@@ -76,16 +76,30 @@ export default function DailyPlanView({ plan, onRefresh }: DailyPlanViewProps) {
   if (!plan) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
-        <p className="text-gray-500 dark:text-gray-400 mb-4">
-          No plan generated for today
-        </p>
-        <button
-          onClick={handleGenerate}
-          disabled={isGenerating}
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isGenerating ? 'Generating...' : 'Generate Today\'s Plan'}
-        </button>
+        {isGenerating ? (
+          <div className="flex flex-col items-center justify-center py-8">
+            <div className="flex space-x-2 mb-4">
+              <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"></div>
+              <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 font-medium mb-2">Generating your study plan...</p>
+            <p className="text-sm text-gray-500 dark:text-gray-500">This may take a few seconds</p>
+          </div>
+        ) : (
+          <>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              No plan generated for today
+            </p>
+            <button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Generate Today's Plan
+            </button>
+          </>
+        )}
       </div>
     );
   }

@@ -443,7 +443,17 @@ export default function Calendar({ viewMode: initialViewMode = 'week' }: Calenda
               )}
             </div>
           </div>
-          {allPlans.has(selectedDate) && allPlans.get(selectedDate) ? (
+          {generatingPlan === selectedDate ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="flex space-x-2 mb-4">
+                <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce"></div>
+                <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              </div>
+              <p className="text-gray-600 dark:text-gray-400 font-medium">Generating your study plan...</p>
+              <p className="text-sm text-gray-500 dark:text-gray-500 mt-2">This may take a few seconds</p>
+            </div>
+          ) : allPlans.has(selectedDate) && allPlans.get(selectedDate) ? (
             <div>
               <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
                 {allPlans.get(selectedDate)!.reasoning}
